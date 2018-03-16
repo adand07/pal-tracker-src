@@ -1,0 +1,210 @@
+From 908ca7cfed3b52d4d5f3ad549e8ca7ad42069ee4 Mon Sep 17 00:00:00 2001
+From: Tyson Gern <tgern@pivotal.io>
+Date: Wed, 26 Jul 2017 12:52:04 -0600
+Subject: [PATCH 16/16] Enable security
+
+---
+ build.gradle                                       |  1 +
+ manifest-production.yml                            |  2 ++
+ manifest-review.yml                                |  2 ++
+ .../pivotal/pal/tracker/SecurityConfiguration.java | 31 ++++++++++++++++++++++
+ .../test/pivotal/pal/trackerapi/HealthApiTest.java | 16 +++++++++--
+ .../pivotal/pal/trackerapi/TimeEntryApiTest.java   | 13 +++++++--
+ .../pivotal/pal/trackerapi/WelcomeApiTest.java     | 16 +++++++++--
+ 7 files changed, 75 insertions(+), 6 deletions(-)
+ create mode 100644 src/main/java/io/pivotal/pal/tracker/SecurityConfiguration.java
+
+diff --git a/build.gradle b/build.gradle
+index cbd3f8e..98de62f 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -15,6 +15,7 @@ dependencies {
+     compile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.1")
+     compile("org.springframework.boot:spring-boot-starter-jdbc")
+     compile("org.springframework.boot:spring-boot-starter-actuator")
++    compile("org.springframework.boot:spring-boot-starter-security")
+ 
+     compile("mysql:mysql-connector-java:6.0.6")
+ 
+diff --git a/manifest-production.yml b/manifest-production.yml
+index 7d7c081..960adf0 100644
+--- a/manifest-production.yml
++++ b/manifest-production.yml
+@@ -5,3 +5,5 @@ applications:
+   host: ps-pal-tracker
+   services:
+   - tracker-database
++  env:
++    SECURITY_FORCE_HTTPS: true
+diff --git a/manifest-review.yml b/manifest-review.yml
+index 88c5829..d849c8f 100644
+--- a/manifest-review.yml
++++ b/manifest-review.yml
+@@ -5,3 +5,5 @@ applications:
+   host: ps-pal-tracker-review
+   services:
+   - tracker-database
++  env:
++    SECURITY_FORCE_HTTPS: true
+diff --git a/src/main/java/io/pivotal/pal/tracker/SecurityConfiguration.java b/src/main/java/io/pivotal/pal/tracker/SecurityConfiguration.java
+new file mode 100644
+index 0000000..591562a
+--- /dev/null
++++ b/src/main/java/io/pivotal/pal/tracker/SecurityConfiguration.java
+@@ -0,0 +1,31 @@
++package io.pivotal.pal.tracker;
++
++import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
++import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
++
++@EnableWebSecurity
++public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
++    @Override
++    protected void configure(HttpSecurity http) throws Exception {
++        String forceHttps = System.getenv("SECURITY_FORCE_HTTPS");
++        if (forceHttps != null && forceHttps.equals("true")) {
++            http.requiresChannel().anyRequest().requiresSecure();
++        }
++
++        http
++            .authorizeRequests().antMatchers("/**").hasRole("USER")
++            .and()
++            .httpBasic()
++            .and()
++            .csrf().disable();
++    }
++
++    @Override
++    public void configure(AuthenticationManagerBuilder auth) throws Exception {
++        auth
++            .inMemoryAuthentication()
++            .withUser("user").password("password").roles("USER");
++    }
++}
+diff --git a/src/test/java/test/pivotal/pal/trackerapi/HealthApiTest.java b/src/test/java/test/pivotal/pal/trackerapi/HealthApiTest.java
+index b3eef23..f35833a 100644
+--- a/src/test/java/test/pivotal/pal/trackerapi/HealthApiTest.java
++++ b/src/test/java/test/pivotal/pal/trackerapi/HealthApiTest.java
+@@ -2,11 +2,13 @@ package test.pivotal.pal.trackerapi;
+ 
+ import com.jayway.jsonpath.DocumentContext;
+ import io.pivotal.pal.tracker.PalTrackerApplication;
++import org.junit.Before;
+ import org.junit.Test;
+ import org.junit.runner.RunWith;
+-import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.context.embedded.LocalServerPort;
+ import org.springframework.boot.test.context.SpringBootTest;
+ import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.boot.web.client.RestTemplateBuilder;
+ import org.springframework.http.HttpStatus;
+ import org.springframework.http.ResponseEntity;
+ import org.springframework.test.context.junit4.SpringRunner;
+@@ -19,9 +21,19 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
+ @SpringBootTest(classes = PalTrackerApplication.class, webEnvironment = RANDOM_PORT)
+ public class HealthApiTest {
+ 
+-    @Autowired
++    @LocalServerPort
++    private String port;
+     private TestRestTemplate restTemplate;
+ 
++    @Before
++    public void setUp() throws Exception {
++        RestTemplateBuilder builder = new RestTemplateBuilder()
++            .rootUri("http://localhost:" + port)
++            .basicAuthorization("user", "password");
++
++        restTemplate = new TestRestTemplate(builder);
++    }
++
+     @Test
+     public void healthTest() {
+         ResponseEntity<String> response = this.restTemplate.getForEntity("/health", String.class);
+diff --git a/src/test/java/test/pivotal/pal/trackerapi/TimeEntryApiTest.java b/src/test/java/test/pivotal/pal/trackerapi/TimeEntryApiTest.java
+index a3368d9..54592e0 100644
+--- a/src/test/java/test/pivotal/pal/trackerapi/TimeEntryApiTest.java
++++ b/src/test/java/test/pivotal/pal/trackerapi/TimeEntryApiTest.java
+@@ -7,9 +7,10 @@ import io.pivotal.pal.tracker.TimeEntry;
+ import org.junit.Before;
+ import org.junit.Test;
+ import org.junit.runner.RunWith;
+-import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.context.embedded.LocalServerPort;
+ import org.springframework.boot.test.context.SpringBootTest;
+ import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.boot.web.client.RestTemplateBuilder;
+ import org.springframework.http.HttpEntity;
+ import org.springframework.http.HttpMethod;
+ import org.springframework.http.HttpStatus;
+@@ -29,16 +30,24 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
+ @SpringBootTest(classes = PalTrackerApplication.class, webEnvironment = RANDOM_PORT)
+ public class TimeEntryApiTest {
+ 
+-    @Autowired
+     private TestRestTemplate restTemplate;
+ 
+     private TimeEntry timeEntry = new TimeEntry(123L, 456L, LocalDate.parse("2017-01-08"), 8);
+ 
++    @LocalServerPort
++    private String port;
++
+     @Before
+     public void setUp() throws Exception {
+         MysqlDataSource dataSource = new MysqlDataSource();
+         dataSource.setUrl(System.getenv("SPRING_DATASOURCE_URL"));
+ 
++        RestTemplateBuilder builder = new RestTemplateBuilder()
++            .rootUri("http://localhost:" + port)
++            .basicAuthorization("user", "password");
++
++        restTemplate = new TestRestTemplate(builder);
++
+         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+         jdbcTemplate.execute("TRUNCATE time_entries");
+ 
+diff --git a/src/test/java/test/pivotal/pal/trackerapi/WelcomeApiTest.java b/src/test/java/test/pivotal/pal/trackerapi/WelcomeApiTest.java
+index cc7091e..2206e8e 100644
+--- a/src/test/java/test/pivotal/pal/trackerapi/WelcomeApiTest.java
++++ b/src/test/java/test/pivotal/pal/trackerapi/WelcomeApiTest.java
+@@ -1,11 +1,13 @@
+ package test.pivotal.pal.trackerapi;
+ 
+ import io.pivotal.pal.tracker.PalTrackerApplication;
++import org.junit.Before;
+ import org.junit.Test;
+ import org.junit.runner.RunWith;
+-import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.context.embedded.LocalServerPort;
+ import org.springframework.boot.test.context.SpringBootTest;
+ import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.boot.web.client.RestTemplateBuilder;
+ import org.springframework.test.context.junit4.SpringRunner;
+ 
+ import static org.assertj.core.api.Assertions.assertThat;
+@@ -15,9 +17,19 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
+ @SpringBootTest(classes = PalTrackerApplication.class, webEnvironment = RANDOM_PORT)
+ public class WelcomeApiTest {
+ 
+-    @Autowired
++    @LocalServerPort
++    private String port;
+     private TestRestTemplate restTemplate;
+ 
++    @Before
++    public void setUp() throws Exception {
++        RestTemplateBuilder builder = new RestTemplateBuilder()
++            .rootUri("http://localhost:" + port)
++            .basicAuthorization("user", "password");
++
++        restTemplate = new TestRestTemplate(builder);
++    }
++
+     @Test
+     public void exampleTest() {
+         String body = this.restTemplate.getForObject("/", String.class);
+-- 
+2.12.3
+

@@ -1,0 +1,348 @@
+From 1e08814dcca12466a59349168c25dd8b6589afc7 Mon Sep 17 00:00:00 2001
+From: Tyson Gern <tgern@pivotal.io>
+Date: Thu, 20 Jul 2017 15:04:20 -0600
+Subject: [PATCH 07/16] Add tests for MVC lab
+
+---
+ .../tracker/InMemoryTimeEntryRepositoryTest.java   |  71 ++++++++++++
+ .../pal/tracker/TimeEntryControllerTest.java       | 116 +++++++++++++++++++
+ .../pivotal/pal/trackerapi/TimeEntryApiTest.java   | 126 +++++++++++++++++++++
+ 3 files changed, 313 insertions(+)
+ create mode 100644 src/test/java/test/pivotal/pal/tracker/InMemoryTimeEntryRepositoryTest.java
+ create mode 100644 src/test/java/test/pivotal/pal/tracker/TimeEntryControllerTest.java
+ create mode 100644 src/test/java/test/pivotal/pal/trackerapi/TimeEntryApiTest.java
+
+diff --git a/src/test/java/test/pivotal/pal/tracker/InMemoryTimeEntryRepositoryTest.java b/src/test/java/test/pivotal/pal/tracker/InMemoryTimeEntryRepositoryTest.java
+new file mode 100644
+index 0000000..d0ae6cb
+--- /dev/null
++++ b/src/test/java/test/pivotal/pal/tracker/InMemoryTimeEntryRepositoryTest.java
+@@ -0,0 +1,71 @@
++package test.pivotal.pal.tracker;
++
++import io.pivotal.pal.tracker.InMemoryTimeEntryRepository;
++import io.pivotal.pal.tracker.TimeEntry;
++import org.junit.Test;
++
++import java.time.LocalDate;
++import java.util.List;
++
++import static java.util.Arrays.asList;
++import static org.assertj.core.api.Assertions.assertThat;
++
++public class InMemoryTimeEntryRepositoryTest {
++    @Test
++    public void create() throws Exception {
++        InMemoryTimeEntryRepository repo = new InMemoryTimeEntryRepository();
++        TimeEntry createdTimeEntry = repo.create(new TimeEntry(123L, 456L, LocalDate.parse("2017-01-08"), 8));
++
++        TimeEntry expected = new TimeEntry(1L, 123L, 456L, LocalDate.parse("2017-01-08"), 8);
++        assertThat(createdTimeEntry).isEqualTo(expected);
++
++        TimeEntry readEntry = repo.find(createdTimeEntry.getId());
++        assertThat(readEntry).isEqualTo(expected);
++    }
++
++    @Test
++    public void find() throws Exception {
++        InMemoryTimeEntryRepository repo = new InMemoryTimeEntryRepository();
++        repo.create(new TimeEntry(123L, 456L, LocalDate.parse("2017-01-08"), 8));
++
++        TimeEntry expected = new TimeEntry(1L, 123L, 456L, LocalDate.parse("2017-01-08"), 8);
++        TimeEntry readEntry = repo.find(1L);
++        assertThat(readEntry).isEqualTo(expected);
++    }
++
++    @Test
++    public void list() throws Exception {
++        InMemoryTimeEntryRepository repo = new InMemoryTimeEntryRepository();
++        repo.create(new TimeEntry(123L, 456L, LocalDate.parse("2017-01-08"), 8));
++        repo.create(new TimeEntry(789L, 654L, LocalDate.parse("2017-01-07"), 4));
++
++        List<TimeEntry> expected = asList(
++                new TimeEntry(1L, 123L, 456L, LocalDate.parse("2017-01-08"), 8),
++                new TimeEntry(2L, 789L, 654L, LocalDate.parse("2017-01-07"), 4)
++        );
++        assertThat(repo.list()).isEqualTo(expected);
++    }
++
++    @Test
++    public void update() throws Exception {
++        InMemoryTimeEntryRepository repo = new InMemoryTimeEntryRepository();
++        TimeEntry created = repo.create(new TimeEntry(123L, 456L, LocalDate.parse("2017-01-08"), 8));
++
++        TimeEntry updatedEntry = repo.update(
++                created.getId(),
++                new TimeEntry(321L, 654L, LocalDate.parse("2017-01-09"), 5));
++
++        TimeEntry expected = new TimeEntry(created.getId(), 321L, 654L, LocalDate.parse("2017-01-09"), 5);
++        assertThat(updatedEntry).isEqualTo(expected);
++        assertThat(repo.find(created.getId())).isEqualTo(expected);
++    }
++
++    @Test
++    public void delete() throws Exception {
++        InMemoryTimeEntryRepository repo = new InMemoryTimeEntryRepository();
++        TimeEntry created = repo.create(new TimeEntry(123L, 456L, LocalDate.parse("2017-01-08"), 8));
++
++        repo.delete(created.getId());
++        assertThat(repo.list()).isEmpty();
++    }
++}
+diff --git a/src/test/java/test/pivotal/pal/tracker/TimeEntryControllerTest.java b/src/test/java/test/pivotal/pal/tracker/TimeEntryControllerTest.java
+new file mode 100644
+index 0000000..d80f2b9
+--- /dev/null
++++ b/src/test/java/test/pivotal/pal/tracker/TimeEntryControllerTest.java
+@@ -0,0 +1,116 @@
++package test.pivotal.pal.tracker;
++
++import io.pivotal.pal.tracker.TimeEntry;
++import io.pivotal.pal.tracker.TimeEntryController;
++import io.pivotal.pal.tracker.TimeEntryRepository;
++import org.junit.Before;
++import org.junit.Test;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ResponseEntity;
++
++import java.time.LocalDate;
++import java.util.List;
++
++import static java.util.Arrays.asList;
++import static org.assertj.core.api.Assertions.assertThat;
++import static org.mockito.Matchers.any;
++import static org.mockito.Matchers.eq;
++import static org.mockito.Mockito.*;
++
++public class TimeEntryControllerTest {
++    private TimeEntryRepository timeEntryRepository;
++    private TimeEntryController controller;
++
++    @Before
++    public void setUp() throws Exception {
++        timeEntryRepository = mock(TimeEntryRepository.class);
++        controller = new TimeEntryController(timeEntryRepository);
++    }
++
++    @Test
++    public void testCreate() throws Exception {
++        TimeEntry timeEntryToCreate = new TimeEntry(123L, 456L, LocalDate.parse("2017-01-08"), 8);
++        TimeEntry expectedResult = new TimeEntry(1L, 123L, 456L, LocalDate.parse("2017-01-08"), 8);
++        doReturn(expectedResult)
++            .when(timeEntryRepository)
++            .create(any(TimeEntry.class));
++
++
++        ResponseEntity response = controller.create(timeEntryToCreate);
++
++
++        verify(timeEntryRepository).create(timeEntryToCreate);
++        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
++        assertThat(response.getBody()).isEqualTo(expectedResult);
++    }
++
++    @Test
++    public void testRead() throws Exception {
++        TimeEntry expected = new TimeEntry(1L, 123L, 456L, LocalDate.parse("2017-01-08"), 8);
++        doReturn(expected)
++            .when(timeEntryRepository)
++            .find(1L);
++
++        ResponseEntity<TimeEntry> response = controller.read(1L);
++
++        verify(timeEntryRepository).find(1L);
++        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
++        assertThat(response.getBody()).isEqualTo(expected);
++    }
++
++    @Test
++    public void testRead_NotFound() throws Exception {
++        doReturn(null)
++            .when(timeEntryRepository)
++            .find(1L);
++
++        ResponseEntity<TimeEntry> response = controller.read(1L);
++        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
++    }
++
++    @Test
++    public void testList() throws Exception {
++        List<TimeEntry> expected = asList(
++            new TimeEntry(1L, 123L, 456L, LocalDate.parse("2017-01-08"), 8),
++            new TimeEntry(2L, 789L, 321L, LocalDate.parse("2017-01-07"), 4)
++        );
++        doReturn(expected).when(timeEntryRepository).list();
++
++        ResponseEntity<List<TimeEntry>> response = controller.list();
++
++        verify(timeEntryRepository).list();
++        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
++        assertThat(response.getBody()).isEqualTo(expected);
++    }
++
++    @Test
++    public void testUpdate() throws Exception {
++        TimeEntry expected = new TimeEntry(1L, 987L, 654L, LocalDate.parse("2017-01-07"), 4);
++        doReturn(expected)
++            .when(timeEntryRepository)
++            .update(eq(1L), any(TimeEntry.class));
++
++        ResponseEntity response = controller.update(1L, expected);
++
++        verify(timeEntryRepository).update(1L, expected);
++        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
++        assertThat(response.getBody()).isEqualTo(expected);
++    }
++
++    @Test
++    public void testUpdate_NotFound() throws Exception {
++        doReturn(null)
++            .when(timeEntryRepository)
++            .update(eq(1L), any(TimeEntry.class));
++
++        ResponseEntity response = controller.update(1L, new TimeEntry());
++        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
++    }
++
++    @Test
++    public void testDelete() throws Exception {
++        ResponseEntity<TimeEntry> response = controller.delete(1L);
++        verify(timeEntryRepository).delete(1L);
++        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
++    }
++}
+diff --git a/src/test/java/test/pivotal/pal/trackerapi/TimeEntryApiTest.java b/src/test/java/test/pivotal/pal/trackerapi/TimeEntryApiTest.java
+new file mode 100644
+index 0000000..91e271b
+--- /dev/null
++++ b/src/test/java/test/pivotal/pal/trackerapi/TimeEntryApiTest.java
+@@ -0,0 +1,126 @@
++package test.pivotal.pal.trackerapi;
++
++import com.jayway.jsonpath.DocumentContext;
++import io.pivotal.pal.tracker.PalTrackerApplication;
++import io.pivotal.pal.tracker.TimeEntry;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.http.HttpEntity;
++import org.springframework.http.HttpMethod;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ResponseEntity;
++import org.springframework.test.context.junit4.SpringRunner;
++
++import java.time.LocalDate;
++import java.util.Collection;
++
++import static com.jayway.jsonpath.JsonPath.parse;
++import static org.assertj.core.api.Assertions.assertThat;
++import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
++
++@RunWith(SpringRunner.class)
++@SpringBootTest(classes = PalTrackerApplication.class, webEnvironment = RANDOM_PORT)
++public class TimeEntryApiTest {
++
++    @Autowired
++    private TestRestTemplate restTemplate;
++
++    private TimeEntry timeEntry = new TimeEntry(123L, 456L, LocalDate.parse("2017-01-08"), 8);
++
++    @Test
++    public void testCreate() throws Exception {
++        ResponseEntity<String> createResponse = restTemplate.postForEntity("/time-entries", timeEntry, String.class);
++
++
++        assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
++
++        DocumentContext createJson = parse(createResponse.getBody());
++        assertThat(createJson.read("$.id", Long.class)).isGreaterThan(0);
++        assertThat(createJson.read("$.projectId", Long.class)).isEqualTo(123L);
++        assertThat(createJson.read("$.userId", Long.class)).isEqualTo(456L);
++        assertThat(createJson.read("$.date", String.class)).isEqualTo("2017-01-08");
++        assertThat(createJson.read("$.hours", Long.class)).isEqualTo(8);
++    }
++
++    @Test
++    public void testList() throws Exception {
++        Long id = createTimeEntry();
++
++
++        ResponseEntity<String> listResponse = restTemplate.getForEntity("/time-entries", String.class);
++
++
++        assertThat(listResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
++
++        DocumentContext listJson = parse(listResponse.getBody());
++
++        Collection timeEntries = listJson.read("$[*]", Collection.class);
++        assertThat(timeEntries.size()).isEqualTo(1);
++
++        Long readId = listJson.read("$[0].id", Long.class);
++        assertThat(readId).isEqualTo(id);
++    }
++
++    @Test
++    public void testRead() throws Exception {
++        Long id = createTimeEntry();
++
++
++        ResponseEntity<String> readResponse = this.restTemplate.getForEntity("/time-entries/" + id, String.class);
++
++
++        assertThat(readResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
++        DocumentContext readJson = parse(readResponse.getBody());
++        assertThat(readJson.read("$.id", Long.class)).isEqualTo(id);
++        assertThat(readJson.read("$.projectId", Long.class)).isEqualTo(123L);
++        assertThat(readJson.read("$.userId", Long.class)).isEqualTo(456L);
++        assertThat(readJson.read("$.date", String.class)).isEqualTo("2017-01-08");
++        assertThat(readJson.read("$.hours", Long.class)).isEqualTo(8);
++    }
++
++    @Test
++    public void testUpdate() throws Exception {
++        Long id = createTimeEntry();
++        TimeEntry updatedTimeEntry = new TimeEntry(2L, 3L, LocalDate.parse("2017-01-09"), 9);
++
++
++        ResponseEntity<String> updateResponse = restTemplate.exchange("/time-entries/" + id, HttpMethod.PUT, new HttpEntity<>(updatedTimeEntry, null), String.class);
++
++
++        assertThat(updateResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
++
++        DocumentContext updateJson = parse(updateResponse.getBody());
++        assertThat(updateJson.read("$.id", Long.class)).isEqualTo(id);
++        assertThat(updateJson.read("$.projectId", Long.class)).isEqualTo(2L);
++        assertThat(updateJson.read("$.userId", Long.class)).isEqualTo(3L);
++        assertThat(updateJson.read("$.date", String.class)).isEqualTo("2017-01-09");
++        assertThat(updateJson.read("$.hours", Long.class)).isEqualTo(9);
++    }
++
++    @Test
++    public void testDelete() throws Exception {
++        Long id = createTimeEntry();
++
++
++        ResponseEntity<String> deleteResponse = restTemplate.exchange("/time-entries/" + id, HttpMethod.DELETE, null, String.class);
++
++
++        assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
++
++        ResponseEntity<String> deletedReadResponse = this.restTemplate.getForEntity("/time-entries/" + id, String.class);
++        assertThat(deletedReadResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
++    }
++
++    private Long createTimeEntry() {
++        HttpEntity<TimeEntry> entity = new HttpEntity<>(timeEntry);
++
++        ResponseEntity<TimeEntry> response = restTemplate.exchange("/time-entries", HttpMethod.POST, entity, TimeEntry.class);
++
++        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
++
++        return response.getBody().getId();
++    }
++}
+-- 
+2.12.3
+
