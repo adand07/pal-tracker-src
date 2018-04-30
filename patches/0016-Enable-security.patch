@@ -1,21 +1,21 @@
-From 908ca7cfed3b52d4d5f3ad549e8ca7ad42069ee4 Mon Sep 17 00:00:00 2001
+From f8b95a72064ae7e2f3f4f732aa9916c0624b807d Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 12:52:04 -0600
 Subject: [PATCH 16/16] Enable security
 
 ---
- build.gradle                                       |  1 +
- manifest-production.yml                            |  2 ++
- manifest-review.yml                                |  2 ++
- .../pivotal/pal/tracker/SecurityConfiguration.java | 31 ++++++++++++++++++++++
- .../test/pivotal/pal/trackerapi/HealthApiTest.java | 16 +++++++++--
- .../pivotal/pal/trackerapi/TimeEntryApiTest.java   | 13 +++++++--
- .../pivotal/pal/trackerapi/WelcomeApiTest.java     | 16 +++++++++--
- 7 files changed, 75 insertions(+), 6 deletions(-)
+ build.gradle                                       |  3 ++
+ .../pivotal/pal/tracker/SecurityConfiguration.java | 38 ++++++++++++++++++++++
+ src/main/resources/application.properties          |  1 +
+ .../test/pivotal/pal/trackerapi/HealthApiTest.java | 16 +++++++--
+ .../pivotal/pal/trackerapi/TimeEntryApiTest.java   | 13 ++++++--
+ .../pivotal/pal/trackerapi/WelcomeApiTest.java     | 16 +++++++--
+ 6 files changed, 81 insertions(+), 6 deletions(-)
  create mode 100644 src/main/java/io/pivotal/pal/tracker/SecurityConfiguration.java
+ create mode 100644 src/main/resources/application.properties
 
 diff --git a/build.gradle b/build.gradle
-index cbd3f8e..98de62f 100644
+index cbd3f8e..71a65a0 100644
 --- a/build.gradle
 +++ b/build.gradle
 @@ -15,6 +15,7 @@ dependencies {
@@ -26,34 +26,31 @@ index cbd3f8e..98de62f 100644
  
      compile("mysql:mysql-connector-java:6.0.6")
  
-diff --git a/manifest-production.yml b/manifest-production.yml
-index 7d7c081..960adf0 100644
---- a/manifest-production.yml
-+++ b/manifest-production.yml
-@@ -5,3 +5,5 @@ applications:
-   host: ps-pal-tracker
-   services:
-   - tracker-database
-+  env:
-+    SECURITY_FORCE_HTTPS: true
-diff --git a/manifest-review.yml b/manifest-review.yml
-index 88c5829..d849c8f 100644
---- a/manifest-review.yml
-+++ b/manifest-review.yml
-@@ -5,3 +5,5 @@ applications:
-   host: ps-pal-tracker-review
-   services:
-   - tracker-database
-+  env:
-+    SECURITY_FORCE_HTTPS: true
+@@ -30,6 +31,7 @@ bootRun.environment([
+     "WELCOME_MESSAGE": "hello",
+     "SPRING_DATASOURCE_URL": developmentDbUrl,
+     "MANAGEMENT_SECURITY_ENABLED": false,
++    "HTTPS_DISABLED": true,
+ ])
+ 
+ def testDbUrl = "jdbc:mysql://localhost:3306/tracker_test?user=tracker&useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false"
+@@ -37,6 +39,7 @@ test.environment([
+     "WELCOME_MESSAGE": "Hello from test",
+     "SPRING_DATASOURCE_URL": testDbUrl,
+     "MANAGEMENT_SECURITY_ENABLED": false,
++    "HTTPS_DISABLED": true,
+ ])
+ 
+ flyway {
 diff --git a/src/main/java/io/pivotal/pal/tracker/SecurityConfiguration.java b/src/main/java/io/pivotal/pal/tracker/SecurityConfiguration.java
 new file mode 100644
-index 0000000..591562a
+index 0000000..f53938d
 --- /dev/null
 +++ b/src/main/java/io/pivotal/pal/tracker/SecurityConfiguration.java
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,38 @@
 +package io.pivotal.pal.tracker;
 +
++import org.springframework.beans.factory.annotation.Value;
 +import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 +import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 +import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -61,10 +58,16 @@ index 0000000..591562a
 +
 +@EnableWebSecurity
 +public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
++
++    private Boolean disableHttps;
++
++    public SecurityConfiguration(@Value("${https.disabled}") Boolean disableHttps) {
++        this.disableHttps = disableHttps;
++    }
++
 +    @Override
 +    protected void configure(HttpSecurity http) throws Exception {
-+        String forceHttps = System.getenv("SECURITY_FORCE_HTTPS");
-+        if (forceHttps != null && forceHttps.equals("true")) {
++        if (!disableHttps) {
 +            http.requiresChannel().anyRequest().requiresSecure();
 +        }
 +
@@ -83,6 +86,14 @@ index 0000000..591562a
 +            .withUser("user").password("password").roles("USER");
 +    }
 +}
+diff --git a/src/main/resources/application.properties b/src/main/resources/application.properties
+new file mode 100644
+index 0000000..383ef7d
+--- /dev/null
++++ b/src/main/resources/application.properties
+@@ -0,0 +1 @@
++https.disabled=false
+\ No newline at end of file
 diff --git a/src/test/java/test/pivotal/pal/trackerapi/HealthApiTest.java b/src/test/java/test/pivotal/pal/trackerapi/HealthApiTest.java
 index b3eef23..f35833a 100644
 --- a/src/test/java/test/pivotal/pal/trackerapi/HealthApiTest.java
