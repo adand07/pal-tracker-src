@@ -1,4 +1,4 @@
-From 1e08814dcca12466a59349168c25dd8b6589afc7 Mon Sep 17 00:00:00 2001
+From 3cde7a2adbb2259ea5a4838c7c5e77dd44e68bbe Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 20 Jul 2017 15:04:20 -0600
 Subject: [PATCH 07/16] Add tests for MVC lab

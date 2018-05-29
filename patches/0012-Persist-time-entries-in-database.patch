@@ -1,4 +1,4 @@
-From 31ca350d4b135c7fb774aa0d0cdae9edb542436b Mon Sep 17 00:00:00 2001
+From bb358eabcb48a5e59945718f02f3f63111c7c670 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 11:48:18 -0600
 Subject: [PATCH 12/16] Persist time entries in database
@@ -86,23 +86,23 @@ index 4ba28db..f175e09 100644
 +
      cp build/libs/pal-tracker-*.jar ../build-output
 diff --git a/manifest-production.yml b/manifest-production.yml
-index 1936823..7d7c081 100644
+index 65194d3..fdcfec0 100644
 --- a/manifest-production.yml
 +++ b/manifest-production.yml
-@@ -3,3 +3,5 @@ applications:
- - name: pal-tracker
+@@ -4,3 +4,5 @@ applications:
    path: build/libs/pal-tracker.jar
-   host: ps-pal-tracker
+   routes:
+   - route: ps-pal-tracker.apps.chicken.pal.pivotal.io
 +  services:
 +  - tracker-database
 diff --git a/manifest-review.yml b/manifest-review.yml
-index 65369e8..88c5829 100644
+index 54c7ca0..f64b83a 100644
 --- a/manifest-review.yml
 +++ b/manifest-review.yml
-@@ -3,3 +3,5 @@ applications:
- - name: pal-tracker
+@@ -4,3 +4,5 @@ applications:
    path: build/libs/pal-tracker.jar
-   host: ps-pal-tracker-review
+   routes:
+   - route: ps-pal-tracker-review.apps.chicken.pal.pivotal.io
 +  services:
 +  - tracker-database
 diff --git a/src/main/java/io/pivotal/pal/tracker/JdbcTimeEntryRepository.java b/src/main/java/io/pivotal/pal/tracker/JdbcTimeEntryRepository.java
