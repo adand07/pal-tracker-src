@@ -1,12 +1,14 @@
-From 1dc2aaa365cb2bb13faf343c39a0504500e27701 Mon Sep 17 00:00:00 2001
+From 50d34ce897cdf6bfc77992ee93ca27473d186761 Mon Sep 17 00:00:00 2001
 From: Mike Gehard <mike.gehard@gmail.com>
 Date: Tue, 9 Jan 2018 09:47:21 -0700
 Subject: [PATCH 09/16] Add task for migrating databases
 
 ---
- ci/migrateDatabase.yml | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ ci/migrateDatabase.yml       | 29 +++++++++++++++++++++++++++++
+ scripts/migrate-databases.sh | 23 +++++++++++++++++++++++
+ 2 files changed, 52 insertions(+)
  create mode 100644 ci/migrateDatabase.yml
+ create mode 100644 scripts/migrate-databases.sh
 
 diff --git a/ci/migrateDatabase.yml b/ci/migrateDatabase.yml
 new file mode 100644
@@ -43,6 +45,35 @@ index 0000000..b2af8c5
 +    ./cf ssh -N -L 63306:$MYSQL_IP:3306 pal-tracker &
 +    sleep 2
 +    ./flyway-5.0.5/flyway -url="jdbc:mysql://127.0.0.1:63306/$DATABASE_NAME" -locations=filesystem:databases/tracker -user=$DATABASE_USERNAME -password=$DATABASE_PASSWORD clean migrate
+diff --git a/scripts/migrate-databases.sh b/scripts/migrate-databases.sh
+new file mode 100644
+index 0000000..d09bbce
+--- /dev/null
++++ b/scripts/migrate-databases.sh
+@@ -0,0 +1,23 @@
++#!/usr/bin/env bash
++set -e
++
++
++app_guid=`cf app $1 --guid`
++credentials=`cf curl /v2/apps/$app_guid/env | jq '.system_env_json.VCAP_SERVICES' | jq '.["p-mysql"][0].credentials'`
++
++ip_address=`echo $credentials | jq -r '.hostname'`
++db_name=`echo $credentials | jq -r '.name'`
++db_username=`echo $credentials | jq -r '.username'`
++db_password=`echo $credentials | jq -r '.password'`
++
++echo "Opening ssh tunnel to $ip_address"
++cf ssh -N -L 63306:$ip_address:3306 pal-tracker &
++cf_ssh_pid=$!
++
++echo "Waiting for tunnel"
++sleep 5
++
++# Passing this in as a param is a bit strage. Maybe put flyway on the path?
++$3/flyway-*/flyway -url="jdbc:mysql://127.0.0.1:63306/$db_name" -locations=filesystem:$2/databases/tracker -user=$db_username -password=$db_password migrate
++
++kill -STOP $cf_ssh_pid
 -- 
 2.12.3
 
