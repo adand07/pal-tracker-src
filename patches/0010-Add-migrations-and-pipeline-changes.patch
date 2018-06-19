@@ -1,4 +1,4 @@
-From 42ae4d79a22852ed2892d8aa28ff8bf9e5cad50b Mon Sep 17 00:00:00 2001
+From 67481c00fff64749d1f6707a6c69cd06580edc74 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 20 Jul 2017 16:00:48 -0600
 Subject: [PATCH 10/16] Add migrations and pipeline changes
@@ -14,7 +14,7 @@ Subject: [PATCH 10/16] Add migrations and pipeline changes
  create mode 100644 databases/tracker/migrations/V1__initial_schema.sql
 
 diff --git a/.circleci/config.yml b/.circleci/config.yml
-index 240f208..94a45e6 100644
+index 240f208..30bcdd0 100644
 --- a/.circleci/config.yml
 +++ b/.circleci/config.yml
 @@ -43,11 +43,25 @@ jobs:
@@ -22,7 +22,7 @@ index 240f208..94a45e6 100644
  
        - run:
 -          name: Deploy to review
-+          name: Insatll jq
++          name: Install jq
 +          command: |
 +            sudo apt-get -y install jq
 +

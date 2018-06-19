@@ -1,21 +1,21 @@
-From ea11031f19259322eb8a78163b2b5f566b36036f Mon Sep 17 00:00:00 2001
+From 72ce9db1439c53045859566ce61e82baa86977e1 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 11:48:18 -0600
 Subject: [PATCH 12/16] Persist time entries in database
 
 ---
- .circleci/config.yml                               | 22 +++++-
+ .circleci/config.yml                               | 20 +++++
  build.gradle                                       | 21 ++++++
  manifest-production.yml                            |  2 +
  manifest-review.yml                                |  2 +
  .../pal/tracker/JdbcTimeEntryRepository.java       | 88 ++++++++++++++++++++++
  .../pivotal/pal/tracker/PalTrackerApplication.java |  9 ++-
  .../pivotal/pal/trackerapi/TimeEntryApiTest.java   | 15 ++++
- 7 files changed, 156 insertions(+), 3 deletions(-)
+ 7 files changed, 155 insertions(+), 2 deletions(-)
  create mode 100644 src/main/java/io/pivotal/pal/tracker/JdbcTimeEntryRepository.java
 
 diff --git a/.circleci/config.yml b/.circleci/config.yml
-index 94a45e6..38531b0 100644
+index 30bcdd0..38531b0 100644
 --- a/.circleci/config.yml
 +++ b/.circleci/config.yml
 @@ -8,6 +8,26 @@ jobs:
@@ -45,15 +45,6 @@ index 94a45e6..38531b0 100644
            name: Test and build
            command: |
              ./gradlew clean build
-@@ -43,7 +63,7 @@ jobs:
-             sudo apt-get install cf-cli
- 
-       - run:
--          name: Insatll jq
-+          name: Install jq
-           command: |
-             sudo apt-get -y install jq
- 
 diff --git a/build.gradle b/build.gradle
 index 8231572..e14e648 100644
 --- a/build.gradle
