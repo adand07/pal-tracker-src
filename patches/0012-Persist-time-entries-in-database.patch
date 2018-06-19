@@ -1,4 +1,4 @@
-From 3a9804a41ecc11df78e3bd112741bd56cf564956 Mon Sep 17 00:00:00 2001
+From ddb5c411a6f6af63e2b4735195ed82aa85feb98d Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 11:48:18 -0600
 Subject: [PATCH 12/16] Persist time entries in database
@@ -15,7 +15,7 @@ Subject: [PATCH 12/16] Persist time entries in database
  create mode 100644 src/main/java/io/pivotal/pal/tracker/JdbcTimeEntryRepository.java
 
 diff --git a/.circleci/config.yml b/.circleci/config.yml
-index 30bcdd0..459998a 100644
+index 30bcdd0..6473705 100644
 --- a/.circleci/config.yml
 +++ b/.circleci/config.yml
 @@ -8,6 +8,26 @@ jobs:
@@ -24,8 +24,8 @@ index 30bcdd0..459998a 100644
        - run:
 +        name: Install MySQL
 +        command: |
-+          apt-get update
-+          apt-get -y install mysql-server
++          sudo apt-get update
++          sudo apt-get -y install mysql-server
 +          service mysql start
 +          # Wait for MySQL to start
 +          sleep 5
