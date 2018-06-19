@@ -1,4 +1,4 @@
-From 04251f7d73f663a4b4eff8a231d28a5c650627be Mon Sep 17 00:00:00 2001
+From 0113efd61a956f5f763b2210f7a9e2376a474a6c Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 12:32:27 -0600
 Subject: [PATCH 14/16] Add actuator endpoints
