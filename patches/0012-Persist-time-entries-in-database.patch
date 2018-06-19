@@ -1,17 +1,16 @@
-From bb358eabcb48a5e59945718f02f3f63111c7c670 Mon Sep 17 00:00:00 2001
+From 1501249100e3698854601f101be02a963bfbf99d Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 11:48:18 -0600
 Subject: [PATCH 12/16] Persist time entries in database
 
 ---
  build.gradle                                       | 21 ++++++
- ci/build.yml                                       | 13 +++-
  manifest-production.yml                            |  2 +
  manifest-review.yml                                |  2 +
  .../pal/tracker/JdbcTimeEntryRepository.java       | 88 ++++++++++++++++++++++
  .../pivotal/pal/tracker/PalTrackerApplication.java |  9 ++-
  .../pivotal/pal/trackerapi/TimeEntryApiTest.java   | 15 ++++
- 7 files changed, 147 insertions(+), 3 deletions(-)
+ 6 files changed, 135 insertions(+), 2 deletions(-)
  create mode 100644 src/main/java/io/pivotal/pal/tracker/JdbcTimeEntryRepository.java
 
 diff --git a/build.gradle b/build.gradle
@@ -61,30 +60,6 @@ index 8231572..e14e648 100644
 +task testMigrate(type: FlywayMigrateTask) {
 +    url = testDbUrl
 +}
-diff --git a/ci/build.yml b/ci/build.yml
-index 4ba28db..f175e09 100644
---- a/ci/build.yml
-+++ b/ci/build.yml
-@@ -18,7 +18,18 @@ run:
-   args:
-   - -exc
-   - |
-+
-+    export DEBIAN_FRONTEND="noninteractive"
-+
-+    apt-get update
-+
-+    apt-get -y install mysql-server
-+    service mysql start
-+
-     cd pal-tracker
-+    mysql -uroot < databases/tracker/create_databases.sql
-     chmod +x gradlew
--    ./gradlew -P version=$(cat ../version/number) build
-+    ./gradlew -P version=$(cat ../version/number) testMigrate clean build || (service mysql stop && exit 1)
-+    service mysql stop
-+
-     cp build/libs/pal-tracker-*.jar ../build-output
 diff --git a/manifest-production.yml b/manifest-production.yml
 index 65194d3..fdcfec0 100644
 --- a/manifest-production.yml

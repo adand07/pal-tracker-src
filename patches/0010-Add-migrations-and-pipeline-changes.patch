@@ -1,65 +1,52 @@
-From 8ec3db820ea81dfc0219281ee0249c81f2558eae Mon Sep 17 00:00:00 2001
+From 985b45ea1985b64d913f94b11952e3a72330557c Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 20 Jul 2017 16:00:48 -0600
 Subject: [PATCH 10/16] Add migrations and pipeline changes
 
 ---
- ci/pipeline.yml                                    | 26 ++++++++++++++++++++++
- databases/tracker/create_databases.sql             | 11 +++++++++
- .../tracker/migrations/V1__initial_schema.sql      | 11 +++++++++
- 3 files changed, 48 insertions(+)
+ ci/migrateDatabase.yml                             | 29 ----------------------
+ databases/tracker/create_databases.sql             | 11 ++++++++
+ .../tracker/migrations/V1__initial_schema.sql      | 11 ++++++++
+ 3 files changed, 22 insertions(+), 29 deletions(-)
+ delete mode 100644 ci/migrateDatabase.yml
  create mode 100644 databases/tracker/create_databases.sql
  create mode 100644 databases/tracker/migrations/V1__initial_schema.sql
 
-diff --git a/ci/pipeline.yml b/ci/pipeline.yml
-index c34c3b2..0d408ef 100644
---- a/ci/pipeline.yml
-+++ b/ci/pipeline.yml
-@@ -60,9 +60,22 @@ jobs:
- - name: deploy-review
-   plan:
-   - get: pal-tracker
-+    passed: [build]
-   - get: pal-tracker-artifacts
-     trigger: true
-     passed: [build]
-+  - task: migrate database
-+    file: pal-tracker/ci/migrateDatabase.yml
-+    params:
-+      CF_API_URL: {{cf-api-url}}
-+      CF_USERNAME: {{cf-username}}
-+      CF_PASSWORD: {{cf-password}}
-+      CF_ORG: {{cf-org}}
-+      CF_SPACE: review
-+      MYSQL_IP: {{mysql-ip}}
-+      DATABASE_NAME: {{review-database-name}}
-+      DATABASE_USERNAME: {{review-database-username}}
-+      DATABASE_PASSWORD: {{review-database-password}}
-   - put: review-deployment
-     params:
-       manifest: pal-tracker/manifest-review.yml
-@@ -73,8 +86,21 @@ jobs:
- - name: deploy-production
-   plan:
-   - get: pal-tracker
-+    passed: [deploy-review]
-   - get: pal-tracker-artifacts
-     passed: [deploy-review]
-+  - task: migrate database
-+    file: pal-tracker/ci/migrateDatabase.yml
-+    params:
-+      CF_API_URL: {{cf-api-url}}
-+      CF_USERNAME: {{cf-username}}
-+      CF_PASSWORD: {{cf-password}}
-+      CF_ORG: {{cf-org}}
-+      CF_SPACE: production
-+      MYSQL_IP: {{mysql-ip}}
-+      DATABASE_NAME: {{production-database-name}}
-+      DATABASE_USERNAME: {{production-database-username}}
-+      DATABASE_PASSWORD: {{production-database-password}}
-   - put: production-deployment
-     params:
-       manifest: pal-tracker/manifest-production.yml
+diff --git a/ci/migrateDatabase.yml b/ci/migrateDatabase.yml
+deleted file mode 100644
+index b2af8c5..0000000
+--- a/ci/migrateDatabase.yml
++++ /dev/null
+@@ -1,29 +0,0 @@
+-platform: linux
+-
+-image_resource:
+-  type: docker-image
+-  source:
+-    repository: openjdk
+-    tag: '8-jdk'
+-
+-inputs:
+-  - name: pal-tracker
+-#  - name: version
+-
+-#outputs:
+-#  - name: build-output
+-
+-run:
+-  path: bash
+-  args:
+-  - -exc
+-  - |
+-    cd pal-tracker
+-    curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github" | tar -zx
+-    chmod +x cf
+-    curl -L "https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/5.0.5/flyway-commandline-5.0.5-linux-x64.tar.gz" | tar -zx
+-    chmod +x flyway-5.0.5/flyway
+-    ./cf login -a $CF_API_URL -u $CF_USERNAME -p $CF_PASSWORD -o $CF_ORG -s $CF_SPACE
+-    ./cf ssh -N -L 63306:$MYSQL_IP:3306 pal-tracker &
+-    sleep 2
+-    ./flyway-5.0.5/flyway -url="jdbc:mysql://127.0.0.1:63306/$DATABASE_NAME" -locations=filesystem:databases/tracker -user=$DATABASE_USERNAME -password=$DATABASE_PASSWORD clean migrate
 diff --git a/databases/tracker/create_databases.sql b/databases/tracker/create_databases.sql
 new file mode 100644
 index 0000000..8b5ed7b
