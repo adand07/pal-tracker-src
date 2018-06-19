@@ -1,4 +1,4 @@
-From 61b35af25572d57d028a9ac55cc361c43f289eb5 Mon Sep 17 00:00:00 2001
+From 5b368e0730ed276b931be506b465091018b50dd2 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 12:50:47 -0600
 Subject: [PATCH 15/16] Add tests for Security lab
