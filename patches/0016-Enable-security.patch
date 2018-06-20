@@ -1,4 +1,4 @@
-From ce03524b087abb8f92485812729f0ec9e526819c Mon Sep 17 00:00:00 2001
+From 92521c35120f52eb305280999f13d0cb2cd85acd Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 12:52:04 -0600
 Subject: [PATCH 16/16] Enable security

@@ -1,109 +1,58 @@
-From 272b1f7dcd682de55ed16ca2e8bca1a647c25aec Mon Sep 17 00:00:00 2001
+From 19f47dc44d52bae8143b69a77de1f7f71ef5abc0 Mon Sep 17 00:00:00 2001
 From: Mike Gehard <mike.gehard@gmail.com>
 Date: Wed, 3 Jan 2018 16:17:48 -0700
 Subject: [PATCH 05/16] Add deployment pipeline
 
 ---
- .circleci/config.yml | 90 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 90 insertions(+)
- create mode 100644 .circleci/config.yml
+ .travis.yml | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+ create mode 100644 .travis.yml
 
-diff --git a/.circleci/config.yml b/.circleci/config.yml
+diff --git a/.travis.yml b/.travis.yml
 new file mode 100644
-index 0000000..240f208
+index 0000000..4cbb913
 --- /dev/null
-+++ b/.circleci/config.yml
-@@ -0,0 +1,90 @@
-+version: 2
++++ b/.travis.yml
+@@ -0,0 +1,39 @@
++dist: trusty
++sudo: false
++notifications:
++  email: false
++env:
++  - RELEASE_TAG="release-$TRAVIS_BUILD_NUMBER"
++if: tag IS blank
++
++
 +jobs:
-+  build:
-+    docker:
-+      - image: circleci/openjdk:8-jdk
-+        environment:
-+          DEBIAN_FRONTEND: "noninteractive"
-+    steps:
-+      - checkout
-+      - run:
-+          name: Test and build
-+          command: |
-+            ./gradlew clean build
-+            mkdir artifacts
-+            cp build/libs/pal-tracker.jar artifacts/pal-tracker-$CIRCLE_SHA1.jar
-+
-+      - store_artifacts:
-+          path: artifacts
-+
-+      - persist_to_workspace:
-+          root: artifacts
-+          paths:
-+            - pal-tracker-*.jar
-+
-+  deployToReview:
-+    docker:
-+      - image: circleci/openjdk:8-jdk
-+        environment:
-+          DEBIAN_FRONTEND: "noninteractive"
-+          ENVIRONMENT: review
-+    steps:
-+      - checkout
-+      - attach_workspace:
-+          at: artifacts
-+      - run:
-+          name: Install CF CLI
-+          command: |
-+            sudo apt-get update
-+            sudo apt-get -y install apt-transport-https ca-certificates
-+            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
-+            echo "deb https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
-+            sudo apt-get update
-+            sudo apt-get install cf-cli
-+
-+      - run:
-+          name: Deploy to review
-+          command: |
-+            cf login -a $CF_API -u $CF_USERNAME -p $CF_PASSWORD -o $CF_ORG -s $ENVIRONMENT
-+            cf push -f manifest-$ENVIRONMENT.yml -p artifacts/pal-tracker-$CIRCLE_SHA1.jar
-+
-+  deployToProd:
-+    docker:
-+      - image: circleci/openjdk:8-jdk
-+        environment:
-+          DEBIAN_FRONTEND: "noninteractive"
-+          ENVIRONMENT: production
-+    steps:
-+      - checkout
-+      - attach_workspace:
-+          at: artifacts
-+      - run:
-+          name: Install CF CLI
-+          command: |
-+            sudo apt-get update
-+            sudo apt-get -y install apt-transport-https ca-certificates
-+            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
-+            echo "deb https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
-+            sudo apt-get update
-+            sudo apt-get install cf-cli
-+
-+      - run:
-+          name: Deploy to prod
-+          command: |
-+            cf login -a $CF_API -u $CF_USERNAME -p $CF_PASSWORD -o $CF_ORG -s $ENVIRONMENT
-+            cf push -f manifest-$ENVIRONMENT.yml -p artifacts/pal-tracker-$CIRCLE_SHA1.jar
-+workflows:
-+  version: 2
-+  deployment-pipeline:
-+    jobs:
-+      - build
-+      - deployToReview:
-+          requires:
-+          - build
-+      - canDeployToProduction:
-+          type: approval
-+          requires:
-+           - deployToReview
-+      - deployToProd:
-+          requires:
-+            - canDeployToProduction
++  include:
++    - stage: build and publish
++      language: java
++      jdk: oraclejdk8
++      install: skip
++      script: ./gradlew clean build
++      before_deploy:
++        - git config --local user.name "Travis CI"
++        - git config --local user.email "travis@example.com"
++        - git tag -f $RELEASE_TAG
++      deploy:
++        provider: releases
++        api_key: $GITHUB_OAUTH_TOKEN
++        file: "build/libs/pal-tracker.jar"
++        skip_cleanup: true
++    - stage: deploy to review
++      language: bash
++      script:
++        - echo "Downloading $RELEASE_TAG"
++        - wget -P build/libs https://github.com/$GITHUB_USERNAME/pal-tracker/releases/download/$RELEASE_TAG/pal-tracker.jar
++      before_deploy:
++        - echo "Deploying $RELEASE_TAG to review"
++      deploy:
++        provider: cloudfoundry
++        api: $CF_API_URL
++        username: $CF_USERNAME
++        password: $CF_PASSWORD
++        organization: $CF_ORG
++        space: review
 -- 
 2.12.3
 

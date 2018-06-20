@@ -1,75 +1,17 @@
-From 67481c00fff64749d1f6707a6c69cd06580edc74 Mon Sep 17 00:00:00 2001
+From 68177f4f6f8123f29330030f2d7b3eaf4ca8e17d Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 20 Jul 2017 16:00:48 -0600
 Subject: [PATCH 10/16] Add migrations and pipeline changes
 
 ---
- .circleci/config.yml                               | 32 ++++++++++++++++++++--
- ci/migrateDatabase.yml                             | 29 --------------------
+ ci/migrateDatabase.yml                             | 29 ----------------------
  databases/tracker/create_databases.sql             | 11 ++++++++
  .../tracker/migrations/V1__initial_schema.sql      | 11 ++++++++
- 4 files changed, 52 insertions(+), 31 deletions(-)
+ 3 files changed, 22 insertions(+), 29 deletions(-)
  delete mode 100644 ci/migrateDatabase.yml
  create mode 100644 databases/tracker/create_databases.sql
  create mode 100644 databases/tracker/migrations/V1__initial_schema.sql
 
-diff --git a/.circleci/config.yml b/.circleci/config.yml
-index 240f208..30bcdd0 100644
---- a/.circleci/config.yml
-+++ b/.circleci/config.yml
-@@ -43,11 +43,25 @@ jobs:
-             sudo apt-get install cf-cli
- 
-       - run:
--          name: Deploy to review
-+          name: Install jq
-+          command: |
-+            sudo apt-get -y install jq
-+
-+      - run:
-+          name: Install flyway
-+          command: |
-+            curl https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/5.1.1/flyway-commandline-5.1.1-linux-x64.tar.gz | tar xvz
-+
-+
-+      - run:
-+          name: Deploy to review and migrate
-           command: |
-             cf login -a $CF_API -u $CF_USERNAME -p $CF_PASSWORD -o $CF_ORG -s $ENVIRONMENT
-             cf push -f manifest-$ENVIRONMENT.yml -p artifacts/pal-tracker-$CIRCLE_SHA1.jar
- 
-+            ./scripts/migrate-databases.sh pal-tracker . /home/circleci/project/
-+
-+
-   deployToProd:
-     docker:
-       - image: circleci/openjdk:8-jdk
-@@ -69,10 +83,24 @@ jobs:
-             sudo apt-get install cf-cli
- 
-       - run:
--          name: Deploy to prod
-+          name: Install jq
-+          command: |
-+            sudo apt-get -y install jq
-+
-+      - run:
-+          name: Install flyway
-+          command: |
-+            curl https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/5.1.1/flyway-commandline-5.1.1-linux-x64.tar.gz | tar xvz
-+
-+
-+      - run:
-+          name: Deploy to prod and migrate
-           command: |
-             cf login -a $CF_API -u $CF_USERNAME -p $CF_PASSWORD -o $CF_ORG -s $ENVIRONMENT
-             cf push -f manifest-$ENVIRONMENT.yml -p artifacts/pal-tracker-$CIRCLE_SHA1.jar
-+
-+            ./scripts/migrate-databases.sh pal-tracker . /home/circleci/project/
-+
- workflows:
-   version: 2
-   deployment-pipeline:
 diff --git a/ci/migrateDatabase.yml b/ci/migrateDatabase.yml
 deleted file mode 100644
 index b2af8c5..0000000

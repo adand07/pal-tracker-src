@@ -1,50 +1,18 @@
-From 2efb7a840c287e466b77515bc1f0c48973a8ec43 Mon Sep 17 00:00:00 2001
+From 1f9ab4c40bceb4adfdb9e9e9b1098f4fbd5724fe Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 11:48:18 -0600
 Subject: [PATCH 12/16] Persist time entries in database
 
 ---
- .circleci/config.yml                               | 20 +++++
  build.gradle                                       | 21 ++++++
  manifest-production.yml                            |  2 +
  manifest-review.yml                                |  2 +
  .../pal/tracker/JdbcTimeEntryRepository.java       | 88 ++++++++++++++++++++++
  .../pivotal/pal/tracker/PalTrackerApplication.java |  9 ++-
  .../pivotal/pal/trackerapi/TimeEntryApiTest.java   | 15 ++++
- 7 files changed, 155 insertions(+), 2 deletions(-)
+ 6 files changed, 135 insertions(+), 2 deletions(-)
  create mode 100644 src/main/java/io/pivotal/pal/tracker/JdbcTimeEntryRepository.java
 
-diff --git a/.circleci/config.yml b/.circleci/config.yml
-index 30bcdd0..73eef4b 100644
---- a/.circleci/config.yml
-+++ b/.circleci/config.yml
-@@ -8,6 +8,26 @@ jobs:
-     steps:
-       - checkout
-       - run:
-+        name: Install MySQL
-+        command: |
-+          sudo apt-get update
-+          sudo apt-get -y install mysql-server
-+          sudo service mysql start
-+          # Wait for MySQL to start
-+          sleep 5
-+
-+      - run:
-+        name: Install flyway
-+        command: |
-+          curl https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/5.1.1/flyway-commandline-5.1.1-linux-x64.tar.gz | tar xvz
-+
-+      - run:
-+        name: Create test database and migrate
-+        command: |
-+          mysql -uroot < databases/tracker/create_databases.sql
-+          flyway-*/flyway -url="jdbc:mysql://localhost:3306/tracker_test" -locations=filesystem:databases/tracker -user=tracker -password=password clean migrate
-+
-+      - run:
-           name: Test and build
-           command: |
-             ./gradlew clean build
 diff --git a/build.gradle b/build.gradle
 index 8231572..e14e648 100644
 --- a/build.gradle
