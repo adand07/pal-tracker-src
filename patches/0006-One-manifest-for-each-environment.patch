@@ -1,26 +1,27 @@
-From 24deb414b96a18305d56b333603a85b298bea2e1 Mon Sep 17 00:00:00 2001
+From 43e0b12617ef6f07e0fb773cdb686dc7ef0cdc20 Mon Sep 17 00:00:00 2001
 From: Mike Gehard <mike.gehard@gmail.com>
 Date: Wed, 3 Jan 2018 16:18:13 -0700
 Subject: [PATCH 06/16] One manifest for each environment
 
 ---
- manifest.yml | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ manifest.yml | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/manifest.yml b/manifest.yml
-index 7f06f91..54c7ca0 100644
+index 7f06f91..fedb17b 100644
 --- a/manifest.yml
 +++ b/manifest.yml
-@@ -2,6 +2,5 @@
+@@ -2,6 +2,7 @@
  applications:
  - name: pal-tracker
    path: build/libs/pal-tracker.jar
 -  random-route: true
--  env:
--    WELCOME_MESSAGE: Hello from Cloud Foundry
-\ No newline at end of file
 +  routes:
 +  - route: ps-pal-tracker-review.apps.chicken.pal.pivotal.io
+   env:
+-    WELCOME_MESSAGE: Hello from Cloud Foundry
+\ No newline at end of file
++    WELCOME_MESSAGE: Hello from the review environment.
 -- 
 2.12.3
 
