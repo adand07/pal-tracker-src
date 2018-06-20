@@ -1,50 +1,13 @@
-From 79a20525058af87666f820616ff0d139ff51d5b8 Mon Sep 17 00:00:00 2001
+From 72929144621648f4757c95c8134c427a25de1e52 Mon Sep 17 00:00:00 2001
 From: Mike Gehard <mike.gehard@gmail.com>
 Date: Tue, 9 Jan 2018 09:47:21 -0700
 Subject: [PATCH 09/16] Add task for migrating databases
 
 ---
- ci/migrateDatabase.yml       | 29 +++++++++++++++++++++++++++++
  scripts/migrate-databases.sh | 23 +++++++++++++++++++++++
- 2 files changed, 52 insertions(+)
- create mode 100644 ci/migrateDatabase.yml
+ 1 file changed, 23 insertions(+)
  create mode 100644 scripts/migrate-databases.sh
 
-diff --git a/ci/migrateDatabase.yml b/ci/migrateDatabase.yml
-new file mode 100644
-index 0000000..b2af8c5
---- /dev/null
-+++ b/ci/migrateDatabase.yml
-@@ -0,0 +1,29 @@
-+platform: linux
-+
-+image_resource:
-+  type: docker-image
-+  source:
-+    repository: openjdk
-+    tag: '8-jdk'
-+
-+inputs:
-+  - name: pal-tracker
-+#  - name: version
-+
-+#outputs:
-+#  - name: build-output
-+
-+run:
-+  path: bash
-+  args:
-+  - -exc
-+  - |
-+    cd pal-tracker
-+    curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github" | tar -zx
-+    chmod +x cf
-+    curl -L "https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/5.0.5/flyway-commandline-5.0.5-linux-x64.tar.gz" | tar -zx
-+    chmod +x flyway-5.0.5/flyway
-+    ./cf login -a $CF_API_URL -u $CF_USERNAME -p $CF_PASSWORD -o $CF_ORG -s $CF_SPACE
-+    ./cf ssh -N -L 63306:$MYSQL_IP:3306 pal-tracker &
-+    sleep 2
-+    ./flyway-5.0.5/flyway -url="jdbc:mysql://127.0.0.1:63306/$DATABASE_NAME" -locations=filesystem:databases/tracker -user=$DATABASE_USERNAME -password=$DATABASE_PASSWORD clean migrate
 diff --git a/scripts/migrate-databases.sh b/scripts/migrate-databases.sh
 new file mode 100644
 index 0000000..d09bbce

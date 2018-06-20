@@ -1,52 +1,15 @@
-From d9cb4ee12c1dc5f12c8127c57915e6475f6105be Mon Sep 17 00:00:00 2001
+From 0c4d6af207e069e4d5d9df389efa82cb214afa41 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 20 Jul 2017 16:00:48 -0600
 Subject: [PATCH 10/16] Add migrations and pipeline changes
 
 ---
- ci/migrateDatabase.yml                             | 29 ----------------------
- databases/tracker/create_databases.sql             | 11 ++++++++
- .../tracker/migrations/V1__initial_schema.sql      | 11 ++++++++
- 3 files changed, 22 insertions(+), 29 deletions(-)
- delete mode 100644 ci/migrateDatabase.yml
+ databases/tracker/create_databases.sql              | 11 +++++++++++
+ databases/tracker/migrations/V1__initial_schema.sql | 11 +++++++++++
+ 2 files changed, 22 insertions(+)
  create mode 100644 databases/tracker/create_databases.sql
  create mode 100644 databases/tracker/migrations/V1__initial_schema.sql
 
-diff --git a/ci/migrateDatabase.yml b/ci/migrateDatabase.yml
-deleted file mode 100644
-index b2af8c5..0000000
---- a/ci/migrateDatabase.yml
-+++ /dev/null
-@@ -1,29 +0,0 @@
--platform: linux
--
--image_resource:
--  type: docker-image
--  source:
--    repository: openjdk
--    tag: '8-jdk'
--
--inputs:
--  - name: pal-tracker
--#  - name: version
--
--#outputs:
--#  - name: build-output
--
--run:
--  path: bash
--  args:
--  - -exc
--  - |
--    cd pal-tracker
--    curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github" | tar -zx
--    chmod +x cf
--    curl -L "https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/5.0.5/flyway-commandline-5.0.5-linux-x64.tar.gz" | tar -zx
--    chmod +x flyway-5.0.5/flyway
--    ./cf login -a $CF_API_URL -u $CF_USERNAME -p $CF_PASSWORD -o $CF_ORG -s $CF_SPACE
--    ./cf ssh -N -L 63306:$MYSQL_IP:3306 pal-tracker &
--    sleep 2
--    ./flyway-5.0.5/flyway -url="jdbc:mysql://127.0.0.1:63306/$DATABASE_NAME" -locations=filesystem:databases/tracker -user=$DATABASE_USERNAME -password=$DATABASE_PASSWORD clean migrate
 diff --git a/databases/tracker/create_databases.sql b/databases/tracker/create_databases.sql
 new file mode 100644
 index 0000000..8b5ed7b
