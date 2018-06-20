@@ -1,22 +1,16 @@
-From efaf1b7730233f922f79a39cb9abccb10fcd73c9 Mon Sep 17 00:00:00 2001
+From 24deb414b96a18305d56b333603a85b298bea2e1 Mon Sep 17 00:00:00 2001
 From: Mike Gehard <mike.gehard@gmail.com>
 Date: Wed, 3 Jan 2018 16:18:13 -0700
 Subject: [PATCH 06/16] One manifest for each environment
 
 ---
- manifest.yml => manifest-production.yml | 5 ++---
- manifest-review.yml                     | 6 ++++++
- 2 files changed, 8 insertions(+), 3 deletions(-)
- rename manifest.yml => manifest-production.yml (50%)
- create mode 100644 manifest-review.yml
+ manifest.yml | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/manifest.yml b/manifest-production.yml
-similarity index 50%
-rename from manifest.yml
-rename to manifest-production.yml
-index 7f06f91..65194d3 100644
+diff --git a/manifest.yml b/manifest.yml
+index 7f06f91..54c7ca0 100644
 --- a/manifest.yml
-+++ b/manifest-production.yml
++++ b/manifest.yml
 @@ -2,6 +2,5 @@
  applications:
  - name: pal-tracker
@@ -25,18 +19,6 @@ index 7f06f91..65194d3 100644
 -  env:
 -    WELCOME_MESSAGE: Hello from Cloud Foundry
 \ No newline at end of file
-+  routes:
-+  - route: ps-pal-tracker.apps.chicken.pal.pivotal.io
-diff --git a/manifest-review.yml b/manifest-review.yml
-new file mode 100644
-index 0000000..54c7ca0
---- /dev/null
-+++ b/manifest-review.yml
-@@ -0,0 +1,6 @@
-+---
-+applications:
-+- name: pal-tracker
-+  path: build/libs/pal-tracker.jar
 +  routes:
 +  - route: ps-pal-tracker-review.apps.chicken.pal.pivotal.io
 -- 

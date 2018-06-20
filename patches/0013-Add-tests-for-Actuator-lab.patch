@@ -1,4 +1,4 @@
-From 40deade7affdb7a23224f04103ab10019c1b4c4a Mon Sep 17 00:00:00 2001
+From f118ddd82ba9f04efb7d14440c97f2ba66d22980 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 12:28:32 -0600
 Subject: [PATCH 13/16] Add tests for Actuator lab
