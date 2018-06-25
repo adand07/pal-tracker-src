@@ -1,4 +1,4 @@
-From bfe5a75d7eec19a9aa8a96dca55d4ee4e4bf1a3e Mon Sep 17 00:00:00 2001
+From 1cd5883881e24d442e6a4ceee835f1601e4c0766 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 11:48:18 -0600
 Subject: [PATCH 12/16] Persist time entries in database
