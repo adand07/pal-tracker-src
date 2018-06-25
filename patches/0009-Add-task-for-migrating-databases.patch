@@ -1,19 +1,19 @@
-From 39fce26052fff62b0ff57746dfc990b165a3da54 Mon Sep 17 00:00:00 2001
+From 415063ad4f55c612c80e53f6e0b66c4434aea0fa Mon Sep 17 00:00:00 2001
 From: Mike Gehard <mike.gehard@gmail.com>
 Date: Tue, 9 Jan 2018 09:47:21 -0700
 Subject: [PATCH 09/16] Add task for migrating databases
 
 ---
- scripts/migrate-databases.sh | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 scripts/migrate-databases.sh
+ scripts/migrate-databases.sh | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+ create mode 100755 scripts/migrate-databases.sh
 
 diff --git a/scripts/migrate-databases.sh b/scripts/migrate-databases.sh
-new file mode 100644
-index 0000000..d09bbce
+new file mode 100755
+index 0000000..dc9d77f
 --- /dev/null
 +++ b/scripts/migrate-databases.sh
-@@ -0,0 +1,23 @@
+@@ -0,0 +1,22 @@
 +#!/usr/bin/env bash
 +set -e
 +
@@ -33,8 +33,7 @@ index 0000000..d09bbce
 +echo "Waiting for tunnel"
 +sleep 5
 +
-+# Passing this in as a param is a bit strage. Maybe put flyway on the path?
-+$3/flyway-*/flyway -url="jdbc:mysql://127.0.0.1:63306/$db_name" -locations=filesystem:$2/databases/tracker -user=$db_username -password=$db_password migrate
++flyway-*/flyway -url="jdbc:mysql://127.0.0.1:63306/$db_name" -locations=filesystem:$2/databases/tracker -user=$db_username -password=$db_password migrate
 +
 +kill -STOP $cf_ssh_pid
 -- 
