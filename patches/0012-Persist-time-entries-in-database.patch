@@ -1,4 +1,4 @@
-From ed6d9ef05b4af097270033e3940ece898b86df15 Mon Sep 17 00:00:00 2001
+From 49d0e9d23a2fceb5b8b24ea03a23cba8407f3fbd Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Wed, 26 Jul 2017 11:48:18 -0600
 Subject: [PATCH 12/16] Persist time entries in database
@@ -60,7 +60,7 @@ index 8231572..e14e648 100644
 +    url = testDbUrl
 +}
 diff --git a/manifest.yml b/manifest.yml
-index fedb17b..132042c 100644
+index 57bae62..1f4d8ec 100644
 --- a/manifest.yml
 +++ b/manifest.yml
 @@ -4,5 +4,7 @@ applications:
@@ -70,7 +70,7 @@ index fedb17b..132042c 100644
 +  services:
 +  - tracker-database
    env:
-     WELCOME_MESSAGE: Hello from the review environment.
+     WELCOME_MESSAGE: Hello from the review environment
 diff --git a/src/main/java/io/pivotal/pal/tracker/JdbcTimeEntryRepository.java b/src/main/java/io/pivotal/pal/tracker/JdbcTimeEntryRepository.java
 new file mode 100644
 index 0000000..2cbb2e3
