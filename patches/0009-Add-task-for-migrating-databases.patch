@@ -1,4 +1,4 @@
-From ba45bc1d8f91480c1c6bdc59f343faf830a99c66 Mon Sep 17 00:00:00 2001
+From 7648b51a051d00dd74ab34d33c9c6cb3cc5d2f34 Mon Sep 17 00:00:00 2001
 From: Mike Gehard <mike.gehard@gmail.com>
 Date: Tue, 9 Jan 2018 09:47:21 -0700
 Subject: [PATCH 09/16] Add task for migrating databases
@@ -10,7 +10,7 @@ Subject: [PATCH 09/16] Add task for migrating databases
  create mode 100755 scripts/migrate-databases.sh
 
 diff --git a/.travis.yml b/.travis.yml
-index 4cbb913..00741ed 100644
+index 4cbb913..8620b69 100644
 --- a/.travis.yml
 +++ b/.travis.yml
 @@ -6,13 +6,18 @@ env:
@@ -29,7 +29,7 @@ index 4cbb913..00741ed 100644
 +      before_script:
 +        - mysql -uroot < databases/tracker/create_databases.sql
 +        - curl https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/5.1.1/flyway-commandline-5.1.1-linux-x64.tar.gz | tar xvz
-+        - flyway-*/flyway -url="jdbc:mysql://localhost:3306/tracker_test" -locations=filesystem:databases/tracker -user=tracker clean migrate
++        - flyway-*/flyway -url="jdbc:mysql://localhost:3306/tracker_test" -locations=filesystem:databases/tracker -user=tracker -password= clean migrate
        script: ./gradlew clean build
        before_deploy:
          - git config --local user.name "Travis CI"
